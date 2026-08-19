@@ -1,0 +1,64 @@
+---
+description: Production system — never break merchant-facing API, webhook, broadcast, embed, or behavioural contracts
+alwaysApply: true
+---
+
+# AR Inbox is live in production
+
+Merchants have built CRMs, webhook receivers, and embedded iframes against this codebase. Silently changing a wire shape, claim name, channel name, or *behaviour* causes data loss on their side that they can't see until reconciliation. Treat every contract below as **frozen**.
+
+## Frozen wire contracts — DO NOT change shape, names, or status codes
+
+- **`/api/v1/*` JSON envelope**:
+  - success → `{ "code": <http>, "data": <object>, "message": "OK|Accepted|Created" }`
+  - error → `{ "code": <http>, "data": null, "error": "<slug>", "message": "...", "errors"?: { field: [msgs] }, "pay_now"?: "<url>" }`
+  - `code` always mirrors HTTP status. `data` is `null` on error, never `{}` and never absent.
+- **Endpoint paths**: `/messages/text`, `/messages/template`, `/templates`, `/wallet/balance`, `/me`, `/iframe-tokens`. Renaming `/messages/text` → `/messages` is breaking. The `/api/v1` prefix is also part of the contract.
+- **Response field names**: `id`, `status`, `client_reference`, `wa_message_id`, `billed_amount`, `currency`, `template_name`. Don't rename, don't reorder, don't change types (e.g. `billed_amount` is a decimal STRING, not a float — float rounding has burned us before).
+- **HTTP status per endpoint**: e.g. `POST /messages/*` → 202, `POST /templates` → 201, depleted-wallet errors → 402 with `pay_now`. Don't "normalise" these to 200/400.
+- **Sanctum ability slugs** in `App\Services\Integration\IntegrationService::allowedAbilities()`: `messages:send`, `templates:read`, `templates:write`, `wallet:read`, `iframe:mint`, `conversations:read`, `contacts:read`. Adding is fine; renaming/removing is not.
+- **Error slugs** in `app/Support/Api/ErrorCode.php` and the domain exception class basenames (e.g. `SessionWindowClosedException`, `WabaNotConnectedException`). Merchant code branches on these strings.
+- **Inbound webhook URLs**: `/webhooks/whatsapp`, `/webhooks/razorpay`. Meta + Razorpay are configured against these paths. **Signature verification logic** (HMAC algo, header name, secret source) is also frozen — relaxing it is a security regression, tightening it can lock out replays the providers depend on.
+- **Iframe SSO JWT claims**: `merchant_id`, `user_id`, `email`, `role`, plus standard `exp`/`iat`/`iss`/`aud`/`jti`. Merchants mint these server-side; renaming `merchant_id` → `merchantId` to match Laravel conventions silently breaks every embed.
+- **Echo / Reverb channel names**: `merchant.{merchantId}.inbox`, `merchant.{merchantId}.wallet`, `merchant.{merchantId}.conversation.{conversationId}`, plus the broadcast event `name` strings (`message.received`, `conversation.assigned`, `conversation.status_changed`, `message.status_updated`, etc.). Iframe-embed merchants subscribe to these by literal string.
+
+## Frozen behavioural contracts — wire shape isn't enough
+
+- **`client_reference` idempotency**: replaying the same `client_reference` within the 24h conversation window returns the original message id (no double charge). Don't shorten the window or change the dedupe key.
+- **`pay_now` recovery flow**: depleted-wallet sends return 402 with a `pay_now` URL the merchant can redirect a human operator to. Removing the URL or returning a different status forces every integrator to rewrite their retry logic.
+- **Suspended-merchant response**: requests from suspended merchants get a specific error slug + status from `merchant.subscription` middleware. Don't change either — merchants use it to drive their own "your account is suspended" UX.
+- **Optional vs required request fields**: adding a *new optional* field is safe. **Adding a new required field — or promoting an existing optional field to required — is breaking.** If new validation is genuinely needed, default the value server-side (don't 422 on requests that worked yesterday).
+
+## Safe to change
+
+- Adding new endpoints, new optional request fields, new abilities, new error slugs, new event types.
+- Improving the human-readable `message` (the `error` slug is the contract, not the prose).
+- Internal refactors (controllers → actions, service classes, DB columns) **as long as the rendered wire shape and behaviour are byte-identical**.
+- UI surfaces — see §"UI ≠ contract" below.
+
+## Where the truth lives — read these before editing API code
+
+1. **`tests/Feature/PublicApiTest.php`, `tests/Feature/IntegrationApiTest.php`** — assertions ARE the contract. If a change makes one of these fail, the contract is breaking.
+2. **`tests/Feature/JwtIframeSsoTest.php`** — JWT claim shape + iframe login flow.
+3. **`tests/Feature/WebhookIngestionTest.php`, `tests/Feature/RazorpayCheckoutFlowTest.php`** — inbound webhook signature + payload contracts.
+4. **`app/Support/Api/ApiDocsCatalog.php`** — single source of truth for documented payloads; rendered at `/docs/api` for merchants. **Any addition or change to an API endpoint must update this file in the same commit.** Out-of-sync docs are worse than no docs.
+5. **`app/Http/Middleware/NormalizeApiResponse.php` + `app/Support/Api/ApiResponse.php`** — the envelope wrapper.
+6. **`routes/channels.php`** — broadcast channel auth + the canonical channel names.
+
+## When a breaking change is genuinely needed
+
+Don't mutate v1. Propose a `/api/v2/...` namespace (new controller, new route group, new tests) and keep v1 serving the old shape until merchants migrate. **Surface the proposal explicitly to the user before writing code** — don't just start a v2 refactor unilaterally.
+
+## UI ≠ contract
+
+Web-only routes (`MessagingController` session-auth endpoints, `MessageStatusPresenter`, Livewire components, Blade views outside `docs/api`, `/inbox`, `/dashboard`, `/leads/stages`, `/media/{path}`) are NOT merchant contracts and can change freely. The super-admin `/admin/*` surface is also free-to-change.
+
+## Preflight checklist — before merging anything that touches API code
+
+1. Did I add/change a request field? If required, **stop** — propose v2 or default it server-side.
+2. Did I change a status code, error slug, JSON field name, or response type? **Stop** — propose v2.
+3. Did I rename a Sanctum ability, JWT claim, or broadcast channel? **Stop** — propose v2.
+4. Did I add a new endpoint, optional field, ability, or event? Update `ApiDocsCatalog.php` in the same commit.
+5. Did I touch webhook ingestion? Confirm `WebhookIngestionTest` / `RazorpayCheckoutFlowTest` still cover the new path; signature verification is unchanged.
+6. Did I change anything visible to embedded iframes (channels, JWT claims, `/iframe-sso/*`)? Run `JwtIframeSsoTest` and confirm the iframe demo (if running locally) still mounts.
+7. Did `tests/Feature/PublicApiTest.php` or `IntegrationApiTest.php` need an assertion change? If yes — and it wasn't a pure addition — you're shipping a breaking change. **Stop.**

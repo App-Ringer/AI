@@ -1,0 +1,12 @@
+{
+  "permissions": {
+    "allow": [
+      "Bash(node scripts/validate_palette.js \"#2a78d6,#4a3aa7,#e34948\" --mode light --surface \"#ffffff\")",
+      "Bash(node scripts/validate_palette.js \"#3987e5,#9085e9,#e66767\" --mode dark --surface \"#0f172a\")",
+      "Bash(node scripts/validate_palette.js \"#2a78d6,#1baf7a,#e34948\" --mode light --surface \"#ffffff\")",
+      "Bash(node scripts/validate_palette.js \"#3987e5,#199e70,#e66767\" --mode dark --surface \"#0f172a\")",
+      "Bash(mysql -u root ar_inbox_tool -e ' *)",
+      "Bash(grep -n 'ApiResponse::json\\\\|=> $t->\\\\|'\\\\''components'\\\\''\\\\|->map\\(' app/Http/Controllers/Api/V1/TemplatesController.php)"
+    ]
+  }
+}

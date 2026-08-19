@@ -1,0 +1,40 @@
+---
+description: AppRinger (AR-Inbox) workspace governance and skill routing. Always applies.
+globs:
+alwaysApply: true
+---
+
+# AppRinger (AR-Inbox) Skills — Routing Rule
+
+Workspace rules live in `.agents/AGENTS.md`. Skills live in `.agents/skills/<name>/SKILL.md`. Shared modules live in `.agents/shared/`.
+
+Before doing feature, change, bug, or review work, READ the matching skill file and follow it:
+
+| Intent | Read this file |
+|---|---|
+| New backend feature / API / DB / Livewire UI | `.agents/skills/new-feature-be/SKILL.md` |
+| New mobile app feature / screen | `.agents/skills/new-feature-mobile/SKILL.md` |
+| Change to an already-documented feature | `.agents/skills/cr/SKILL.md` |
+| Bug, error, wrong behaviour, RCA | `.agents/skills/bug/SKILL.md` |
+| Code review of a diff / branch / file | `.agents/skills/review/SKILL.md` |
+
+Routing:
+- Modification to a documented feature is `cr`.
+- Wrong behaviour versus spec is `bug`.
+- Unsure — ask one routing question, do not guess.
+
+Shared modules every skill uses:
+- `.agents/shared/impact-analysis.md` — run before planning.
+- `.agents/shared/grill-me.md` — ask clarifying questions, then STOP for answers.
+- `.agents/shared/standards.md` — AppRinger engineering rules.
+- `.agents/shared/caveman-summary.md` — mandatory final summary.
+
+Non-negotiable KK Standards:
+1. Impact analysis first.
+2. Grill-me before documenting. Never assume business logic.
+3. Zero implementation code before explicit plan approval.
+4. Multi-tenant isolation on every table with `merchant_id`.
+5. SweetAlert2 (`swal()`) — never browser `alert()`.
+6. Premium modern UI by default (soft backgrounds, glassmorphism, hover-lifts). No inline styles.
+7. 100% test coverage with `php artisan test`.
+8. Caveman summary at the end.
