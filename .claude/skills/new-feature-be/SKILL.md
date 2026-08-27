@@ -1,82 +1,110 @@
 ---
 name: new-feature-be
-description: Mandatory workflow for designing and implementing a NEW BACKEND feature in AKAL (Laravel, AKAL-BE/). Enforces Pony Tail governance, impact analysis, grill-me clarification, 19-phase specification docs with Mermaid diagrams, DB soft deletes + audit columns (created_by, updated_by, deleted_by, created_at, updated_at, deleted_at), Communicator::success / Communicator::error with ResponseMessage enums, trace Logger + LoggerRequest middleware, high-priority queues, admin-configurable settings, Postman docs, GitHub Actions CI/CD, 100% unit + integration + E2E coverage, strict plan-approval gate before any code, and a caveman completion summary. Trigger on "new backend feature", "new API", "add endpoint", "new-feature-be".
+description: Mandatory workflow for designing and implementing a NEW BACKEND feature across any backend stack (Laravel, Node.js/NestJS/Express, Python/FastAPI/Django, Go, Java/Spring, etc.). Enforces clean architecture, impact analysis, grill-me clarification, 19-phase specification docs with Mermaid diagrams, DB soft deletes + audit columns (created_by, updated_by, deleted_by, created_at, updated_at, deleted_at), consistent API response wrappers with business status codes/enums, trace logging/correlation IDs, idempotent high-priority queues, configurable settings, OpenAPI/Postman documentation, 100% unit + integration + E2E coverage, strict plan-approval gate before code, and a caveman completion summary. Trigger on "new backend feature", "new API", "add endpoint", "new-feature-be".
 ---
 
-# New Backend Feature — AKAL
+# New Backend Feature Design & Implementation
 
-Scope: `AKAL-BE/` (Laravel), admin Blade UI, DB, queues, cache, API, CI/CD.
-Mobile app work is OUT of scope — use `new-feature-mobile` for that. This skill may only write `Mobile-Changes.md` as a **contract document** for the mobile team.
+Scope: Backend services, API endpoints, database schema & migrations, background queues, caching, and CI/CD.
+Frontend and mobile implementations are out of scope — this skill produces client contracts (`Client-Contracts.md` or `API.md`) for frontend/mobile consumers.
 
-Read first: `.agents/shared/akal-standards.md`, `.agents/AGENTS.md`.
+Docs root: `docs/features/<feature-name>/`
 
 ---
+
+## Step 0 — Stack & Architecture Discovery
+
+Before designing, inspect the workspace to identify the backend ecosystem:
+- **Framework & Runtime**: Laravel, Node.js (NestJS / Express / Fastify), Python (FastAPI / Django), Go, Java/Spring, etc.
+- **Database & ORM**: PostgreSQL, MySQL, SQLite, MongoDB via Eloquent, Prisma, TypeORM, SQLAlchemy, GORM, etc.
+- **Queue & Cache Drivers**: Redis, RabbitMQ, SQS, database queues, Memcached.
+- **Authentication**: JWT, Sanctum, Passport, OAuth2, Session-based auth.
+
+Follow the architectural patterns and service/repository boundaries already established in the codebase.
 
 ## Step 1 — Impact Analysis
 
-Run `.agents/shared/impact-analysis.md` in full.
+Run impact analysis across the existing backend:
+- Audit existing database tables and models (missing table requires `CREATE TABLE` migration, not `ALTER TABLE`).
+- Check route conflicts, middleware chains, and authorization policies.
+- Assess queue worker load, cache invalidation blast radius, and external API dependencies.
+
 Output: `docs/features/<feature-name>/Impact-Analysis.md`.
-Database table audit is mandatory — missing table means `CREATE TABLE` migration, not `ALTER TABLE`.
 
 ## Step 2 — Grill Me
 
-Run `.agents/shared/grill-me.md`. One numbered batch, defaults included, then STOP.
-Record answers under `## Clarifications` in `Feature-Spec.md`.
+Conduct a focused clarification interview with the user:
+- Present a single numbered batch of questions with sensible defaults provided.
+- Clarify domain logic, rate limits, error states, and permissions.
+- STOP and wait for responses before writing detailed specifications.
+- Record answers under `## Clarifications` in `Feature-Spec.md`.
 
-## Step 3 — UI Reuse Audit (if admin UI touched)
+## Step 3 — UI / Admin View Reuse Audit (if admin views are touched)
 
-Inventory existing Blade components, partials, CSS classes, design tokens. Reuse before creating. Record the reuse map in `Design-Review.md`. Premium aesthetics + `swal()` + pagination + AJAX + full responsiveness per `akal-standards.md`.
+If the feature includes server-rendered admin views (e.g., Blade, EJS, Jinja, Thymeleaf):
+- Inventory existing components, partials, CSS design tokens, and utility classes. Reuse before creating.
+- Enforce premium aesthetics: modern spacing, subtle shadows, SweetAlert2 (`swal()`), AJAX with loading spinners, pagination, and responsiveness.
+- Record component reuse in `Design-Review.md`.
 
-## Step 4 — Write All 19 Docs
+## Step 4 — Write All 19 Backend Docs
 
-Zero implementation code until all 19 files exist under `docs/features/<feature-name>/`:
+Zero implementation code until all 19 specification files exist under `docs/features/<feature-name>/`:
 
-1. `Impact-Analysis.md` — codebase/scope/table-existence audit, risk register, rollback, estimate.
-2. `Feature-Spec.md` — business goal, current vs future flow, acceptance criteria, admin-configurable settings, `## Clarifications`.
-3. `Use-Cases.md` — actors, happy/alt/failure paths, abuse cases. **Mermaid `stateDiagram`**.
-4. `DB-Changes.md` — schema, indexes, constraints, locking, migration + rollback SQL, soft deletes and `created_by`/`updated_by`/`deleted_by`/`created_at`/`updated_at`/`deleted_at` on every table. **Mermaid `erDiagram`**.
-5. `BE-Changes.md` — controllers, services, repositories, actions, middleware, validation, routes, jobs on `onQueue('high')`, cache keys via `CacheManager`.
-6. `Mobile-Changes.md` — contract for mobile: endpoints consumed, payloads, error codes, force-update impact. Doc-only in this skill.
-7. `Design-Review.md` — admin UI screens, component reuse map, tokens, responsive rules.
-8. `API.md` — endpoints, headers, request/response schemas, business codes, rate limits, cURL + Postman payloads.
-9. `Logging.md` — `TRACE_ID` flow, `App\Support\Logger\Logger` calls, `LoggerRequest` middleware, `storage/logs/trace/trace.log`, what is redacted.
-10. `Sequence-Diagram.md` — client → API → service → DB → queue → gateway → Sanctum. **Mermaid `sequenceDiagram`** for happy, failure, retry.
-11. `Architecture.md` — topology, dependencies, queue workers. **Mermaid `flowchart`**.
-12. `Unit-Test.md` — 100% coverage matrix, mocks, edge cases.
-13. `Integration-Test.md` — API, DB, queue, cache, auth integration matrix, 100% coverage.
-14. `E2E-Test.md` — full journeys incl. admin UI, swal confirm, AJAX, cache invalidation.
-15. `Performance.md` — RPS, query plans, N+1 prevention, caching strategy, load test plan.
-16. `Security.md` — authz checks, input sanitization, encryption at rest, rate limits, race conditions, OWASP pass.
-17. `Deployment.md` — migration order, env vars, feature flag, rollout + rollback, smoke tests.
-18. `Review.md` — peer review checklist and quality gates.
-19. `Walkthrough.md` — final summary, Postman link, proof of completion.
+1. `Impact-Analysis.md` — Codebase scope, schema audit, risk register, rollback plan, estimate.
+2. `Feature-Spec.md` — Business goals, current vs future flows, acceptance criteria, configurable settings, `## Clarifications`.
+3. `Use-Cases.md` — Actors, happy/alt/failure paths, abuse cases. **Mermaid `stateDiagram`**.
+4. `DB-Changes.md` — Schema, indexes, constraints, locking strategies, migration SQL, soft deletes + audit columns (`created_by`, `updated_by`, `deleted_by`, `created_at`, `updated_at`, `deleted_at`). **Mermaid `erDiagram`**.
+5. `BE-Changes.md` — Controllers/handlers, services, repositories, actions, middleware, request validation, routes, queue jobs, cache keys.
+6. `Client-Contracts.md` — Contract for Web and Mobile consumers: endpoints, request/response schemas, business status codes, headers.
+7. `Design-Review.md` — Admin/server-rendered UI screens, component reuse map, design tokens (if applicable).
+8. `API.md` — Endpoints, headers, payload schemas, business codes, rate limits, cURL + Postman/OpenAPI payloads.
+9. `Logging.md` — Correlation / `TRACE_ID` propagation, structured logging format, log levels, sensitive data redaction.
+10. `Sequence-Diagram.md` — Client → API → Middleware → Service → DB → Queue → External Gateway. **Mermaid `sequenceDiagram`** for happy, failure, and retry flows.
+11. `Architecture.md` — Topology, module boundaries, queue workers, cache layer. **Mermaid `flowchart`**.
+12. `Unit-Test.md` — 100% coverage matrix for business logic, services, validators, and mappers.
+13. `Integration-Test.md` — API endpoints, DB queries, transactions, queue dispatch, cache hit/miss integration matrix.
+14. `E2E-Test.md` — Full journey integration test specifications.
+15. `Performance.md` — Query execution plans, N+1 query prevention, indexing strategy, caching policy, rate limiting, load test plan.
+16. `Security.md` — Authentication, authorization (IDOR checks on all route params), input sanitization, SQLi/XSS protection, rate limiting, secrets management.
+17. `Deployment.md` — Migration execution order, environment variables, feature flags, zero-downtime rollout, rollback steps.
+18. `Review.md` — Peer review checklist and quality gate criteria.
+19. `Walkthrough.md` — Final deliverable summary, Postman/OpenAPI links, verification evidence.
 
 ## Step 5 — Plan Approval Gate (HARD STOP)
 
-Present `docs/features/<feature-name>/implementation_plan.md` — ordered task list, files to touch, migration order, test plan.
-**Write ZERO application code until the user explicitly approves.** No "starter" code, no scaffolding, no migrations.
+Present `docs/features/<feature-name>/implementation_plan.md` — ordered task list, files to touch, migration sequence, test matrix.
+**Write ZERO application code until the user explicitly approves the plan.** No starter code, no scaffolding, no migration execution.
 
 ## Step 6 — Implement
 
-Order: migration + model → repository → service/action → controller → routes → jobs → cache → admin UI → docs sync.
+Implementation sequence:
+1. Database migrations & entity models (with soft deletes and audit fields).
+2. Data access layer / Repositories / Query builders.
+3. Business logic services / Domain actions.
+4. Request validators & input sanitizers.
+5. Controllers / Route handlers & middleware.
+6. Asynchronous jobs / Background queue workers (idempotent, prioritized, with retry/backoff).
+7. Centralized cache management & automatic invalidation on mutation.
+8. Admin views / Server templates (if applicable).
+9. Documentation and API contract synchronization.
 
-Every commit must satisfy:
-- `Communicator::success(...)` / `Communicator::error(...)`, HTTP always `200`, business code inside payload.
-- `App\Enums\ResponseMessage` enum cases only.
-- `SoftDeletes` + audit columns on every table and model.
-- Time-sensitive jobs on `onQueue('high')`, idempotent, with retry/backoff.
-- Trace logging with `TRACE_ID`.
-- Admin-configurable values in settings, not hardcoded.
-- Top-level `use` imports, no inline FQCNs.
+Core implementation rules:
+- Consistent API response formatting with structured status and business message enums/constants.
+- SoftDeletes and audit author/timestamp fields on all persistent entity tables.
+- Time-sensitive background tasks routed to high-priority queues with exponential backoff.
+- Trace logging carrying request correlation IDs (`TRACE_ID`).
+- Admin/system settings configurable via environment or database settings rather than hardcoded magic values.
+- Clean top-level imports, no inline fully qualified class names.
 
-## Step 7 — Test to 100%
+## Step 7 — Test to 100% Coverage
 
-Run the suite. Report REAL pass/fail/coverage numbers. Cover expired states, lockouts, soft-deleted rows, negative input, missing relations, race conditions, cache hit vs miss. Fix failures before claiming done.
+Run the automated test suites (unit, integration, feature). Report REAL pass/fail numbers and coverage percentages.
+Verify edge cases: expired tokens, lock contention, soft-deleted rows, negative numbers, missing relationships, race conditions, cache invalidation.
 
-## Step 8 — Docs & Postman Sync
+## Step 8 — Docs & API Collection Sync
 
-Update `docs/api/postman.json`, `API.md`, and `Walkthrough.md`. Verify `.github/workflows/tests.yml` and `devDeploy.yml` still cover the new paths.
+Update `API.md`, Postman/OpenAPI collection files, and `Walkthrough.md`. Ensure CI/CD workflows run all new tests.
 
 ## Step 9 — Caveman Summary
 
-Run `.agents/shared/caveman-summary.md`. Mandatory.
+Mandatory concise completion summary: Specify endpoints created, migrations run, queue jobs added, and real test suite coverage numbers.

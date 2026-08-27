@@ -1,100 +1,115 @@
 ---
 name: new-feature-mobile
-description: Mandatory workflow for designing and implementing a NEW MOBILE APP feature in AKAL (AKAL-Mobile/). Enforces impact analysis, grill-me clarification, a 19-phase mobile specification doc set with Mermaid diagrams under docs/features/<feature-name>/mobile/, widget reuse and design-token audit, state management spec, API contract binding to the backend, offline/local storage, permissions and deeplinks, TRACE_ID propagation and crash reporting, accessibility, force-update and store release plan, 100% unit + widget + E2E coverage, strict plan-approval gate before any code, and a caveman completion summary. Trigger on "new mobile feature", "new screen", "app feature", "new-feature-mobile".
+description: Mandatory workflow for designing and implementing a NEW MOBILE APP feature across any mobile stack (Flutter, React Native, iOS/Swift/SwiftUI, Android/Kotlin/Jetpack Compose). Enforces impact analysis, grill-me clarification, 19-phase mobile specification docs with Mermaid diagrams under docs/features/<feature-name>/mobile/, widget/component reuse and design-token audit, state management design, API contract binding, offline/local storage with migrations, permissions and deeplink routing, correlation ID propagation and crash telemetry, accessibility, store release planning, 100% unit + widget + E2E coverage, strict plan-approval gate before code, and a caveman completion summary. Trigger on "new mobile feature", "new mobile screen", "mobile app feature", "new-feature-mobile".
 ---
 
-# New Mobile Feature — AKAL
+# New Mobile Feature Design & Implementation
 
-Scope: `AKAL-Mobile/` only. Backend/API/DB work is OUT of scope — use `new-feature-be`.
-If the feature needs a new or changed endpoint, STOP and require the backend contract (`docs/features/<feature-name>/API.md`) to exist and be approved first. Mobile never invents API shapes.
+Scope: Mobile application codebase (Flutter, React Native, iOS native, Android native).
+Backend / API / Database implementations are out of scope — if the feature requires a new or modified backend endpoint, require the backend contract (`docs/features/<feature-name>/API.md`) to exist and be approved first. Mobile never invents unsupported API shapes.
 
-Read first: `.agents/shared/akal-standards.md`, `.agents/AGENTS.md`.
-
-Docs root for this skill: `docs/features/<feature-name>/mobile/`.
+Docs root: `docs/features/<feature-name>/mobile/`
 
 ---
+
+## Step 0 — Stack & Mobile Ecosystem Discovery
+
+Inspect the mobile workspace to identify the framework and architectural patterns:
+- **Framework**: Flutter (Dart), React Native (TypeScript), iOS (Swift / SwiftUI / UIKit), Android (Kotlin / Jetpack Compose).
+- **State Management**: Bloc, Riverpod, Provider, Zustand, Redux Toolkit, MobX, ViewModel / StateFlow.
+- **Networking & Cache**: Dio, Axios, Retrofit, Apollo GraphQL, TanStack Query.
+- **Local & Secure Storage**: SQLite, Drift, Realm, MMKV, Room, CoreData, FlutterSecureStorage, Keychain/Keystore.
+- **Navigation & Routing**: GoRouter, AutoRoute, React Navigation, Navigation Component, SwiftUI Navigation.
 
 ## Step 1 — Impact Analysis
 
-Run `.agents/shared/impact-analysis.md`, mobile lens:
-- Screens, routes, navigation graph entries affected.
-- State stores / blocs / providers touched.
-- DTO + model changes, JSON contract drift, nullable fields.
-- Local storage / secure storage schema and its migration path.
-- Minimum supported OS, app version gate, force-update need for old builds.
-- App size and dependency additions (justify every new package).
-- Existing widget/theme tokens that already solve this.
+Run impact analysis across the mobile app:
+- Identify screens, routes, and navigation back-stack entries affected.
+- Audit state stores, view models, and domain providers touched.
+- Check DTO / model changes, JSON contract drift, and nullable fields.
+- Analyze local database / secure storage schema migrations and version increments.
+- Verify minimum supported OS version and whether a forced app update gate is required.
+- Assess app binary size impact and justify any new third-party package dependencies.
 
 Output: `docs/features/<feature-name>/mobile/Impact-Analysis.md`.
 
 ## Step 2 — Grill Me
 
-Run `.agents/shared/grill-me.md` plus mobile-specific questions:
-- Offline behaviour: cached read, queued write, or hard block?
-- Loading/empty/error/retry states per screen — what copy?
-- Back-navigation and deeplink entry from push notification?
-- Permission denied permanently — what fallback UI?
-- Which strings need localisation now vs later?
-- Analytics events required?
+Conduct a focused clarification interview with the user:
+- Offline behaviour: Cached read, queued write with background sync, or immediate blocking alert?
+- Screen states: Exact copy and visual design for loading, empty, error, and retry states?
+- Navigation: Back-stack behavior and deeplink entry from push notifications?
+- Permissions: What fallback UI appears when permissions are permanently denied?
+- Localization & Internationalization (i18n): What strings need localization keys?
+- Analytics & Telemetry: What custom event tracking is required?
 
-STOP after asking. Record answers in `Feature-Spec.md` under `## Clarifications`.
+STOP after asking to await user response. Record answers under `## Clarifications` in `Feature-Spec.md`.
 
-## Step 3 — Widget & Design Token Reuse Audit
+## Step 3 — Widget / Component & Design Token Reuse Audit
 
-Inventory existing widgets, themes, spacing/color/typography tokens, shared components. Reuse first; new widget requires justification. Record the reuse map in `UI-Design.md`.
-Aesthetic bar matches the AKAL premium standard: soft surfaces, subtle depth, gradient accents, micro-animations, no jank, touch targets ≥ 44dp.
+- Inventory existing widgets/components, design tokens (color palette, spacing, typography scales), and custom themes. Reuse before creating new primitives.
+- Enforce premium mobile aesthetics: soft surfaces, subtle depth, gradient accents, fluid micro-animations (hero transitions, swipe gestures), no UI jank (60fps), and accessible touch targets (≥ 44x44 dp / pt).
+- Record the component reuse map in `UI-Design.md`.
 
 ## Step 4 — Write All 19 Mobile Docs
 
-Zero implementation code until all 19 files exist under `docs/features/<feature-name>/mobile/`:
+Zero implementation code until all 19 specification files exist under `docs/features/<feature-name>/mobile/`:
 
-1. `Impact-Analysis.md` — blast radius, version gating, risk register, rollback, estimate.
-2. `Feature-Spec.md` — goal, acceptance criteria, remote-config toggles, `## Clarifications`.
-3. `Use-Cases.md` — actors, happy/alt/failure/offline paths. **Mermaid `stateDiagram`**.
-4. `Screen-Flow.md` — navigation graph, entry points, deeplinks, back-stack rules. **Mermaid `flowchart`**.
-5. `UI-Design.md` — screens, widget reuse map, design tokens, typography, dark mode, accessibility (labels, contrast, dynamic text scaling), empty/loading/error states.
-6. `State-Management.md` — store/bloc/provider design, events, states, side effects, disposal. **Mermaid `stateDiagram`**.
-7. `API-Integration.md` — endpoints consumed (bound to backend `API.md`), DTOs, serialization, business-code → UI message mapping, timeouts, retry/backoff.
-8. `Local-Storage.md` — cached entities, secure storage items, schema versioning + migration, eviction, what must never be persisted.
-9. `Permissions-Deeplinks.md` — OS permissions with rationale copy, denied/permanently-denied fallbacks, push handling, deeplink routes.
-10. `Sequence-Diagram.md` — UI → state store → repository → API → cache. **Mermaid `sequenceDiagram`** for happy, failure, offline, retry.
-11. `Architecture.md` — layering, module boundaries, DI graph. **Mermaid `flowchart`**.
-12. `Logging.md` — `TRACE_ID` header propagation to backend, crash/error reporting, log redaction rules, debug-only logs.
-13. `Unit-Test.md` — 100% coverage matrix for state stores, mappers, validators, repositories (mocked).
-14. `Widget-Test.md` — per-screen widget tests: every state, tap targets, form validation, accessibility semantics.
-15. `E2E-Test.md` — full journeys on device/emulator: cold start, deeplink entry, offline mode, permission denial, back navigation.
-16. `Performance.md` — frame budget/jank, list virtualization, image caching, cold start time, app size delta, battery/network cost.
-17. `Security.md` — secure storage of tokens, certificate pinning, obfuscation, root/jailbreak posture, screenshot/clipboard rules for sensitive screens, no secrets in the bundle.
-18. `Release-Deployment.md` — build flavors, version bump, force-update gate via `/api/v1/masterData`, staged store rollout, rollback/kill-switch.
-19. `Review.md` — peer review checklist, quality gates, final walkthrough with screenshots and proof of completion.
-
-Mermaid mandatory in docs 3, 4, 6, 10, 11.
+1. `Impact-Analysis.md` — Blast radius, dependency audit, OS version gating, risk register, rollback plan.
+2. `Feature-Spec.md` — User stories, business goals, acceptance criteria, remote-config toggles, `## Clarifications`.
+3. `Use-Cases.md` — Actors, happy/alt/failure/offline paths. **Mermaid `stateDiagram`**.
+4. `Screen-Flow.md` — Navigation graph, entry points, modal stacks, deeplinks, back-stack rules. **Mermaid `flowchart`**.
+5. `UI-Design.md` — Screen layouts, component reuse map, design tokens, typography, dark mode, accessibility (contrast, dynamic font scaling), empty/loading/error states.
+6. `State-Management.md` — State store / Bloc / ViewModel architecture, event dispatchers, state transitions, side effects, disposal lifecycle. **Mermaid `stateDiagram`**.
+7. `API-Integration.md` — Endpoints consumed (bound to backend `API.md`), DTO serialization/deserialization, business status code to UI copy mapping, timeouts, retry/backoff.
+8. `Local-Storage.md` — Cached entities, secure storage items, schema versioning, migration scripts, eviction policies, sensitive data protection rules.
+9. `Permissions-Deeplinks.md` — OS permissions with rationale copy, denied/blocked fallbacks, push notification handling, URL schemes & universal/app links.
+10. `Sequence-Diagram.md` — UI → State Store → Repository → API Client → Local Cache. **Mermaid `sequenceDiagram`** for happy, failure, offline, and retry flows.
+11. `Architecture.md` — Layering (UI / Presentation → Domain → Data), module boundaries, Dependency Injection (DI) graph. **Mermaid `flowchart`**.
+12. `Logging.md` — Correlation ID (`TRACE_ID`) header propagation to backend, crash reporting, breadcrumbs, debug vs release log redaction.
+13. `Unit-Test.md` — 100% coverage matrix for state stores, view models, mappers, validators, and repositories (with mocks).
+14. `Widget-Test.md` — Per-screen widget/component tests: every state (loading, error, empty, success), tap targets, form validation, accessibility semantics.
+15. `E2E-Test.md` — Full journeys on device/simulator: cold start, deeplink deep entry, offline mode, permission denial, back-navigation.
+16. `Performance.md` — Frame rendering budget (60/120fps), list virtualization, image caching/downsampling, cold start latency, memory leak audit, battery/network efficiency.
+17. `Security.md` — Secure storage of auth tokens, TLS/certificate pinning, code obfuscation, root/jailbreak posture, clipboard/screenshot privacy on sensitive screens, zero secrets in the app bundle.
+18. `Release-Deployment.md` — Build flavors (dev/staging/prod), version code/name bump, minimum supported version check, phased store rollout, rollback/kill-switch strategy.
+19. `Review.md` — Peer review checklist, quality gates, and final walkthrough with UI screenshots and verification evidence.
 
 ## Step 5 — Plan Approval Gate (HARD STOP)
 
 Present `docs/features/<feature-name>/mobile/implementation_plan.md` — ordered task list, files to touch, package additions, test plan.
-**Write ZERO app code until the user explicitly approves.**
+**Write ZERO application code until the user explicitly approves the plan.**
 
 ## Step 6 — Implement
 
-Order: models/DTOs → repository + API client → state store → widgets → screens → navigation/deeplinks → local storage → localisation → analytics.
+Implementation sequence:
+1. Models, DTOs, and JSON serialization logic.
+2. Repository and API client layer (bound to API contracts).
+3. State stores / ViewModels / Blocs with event/state handlers.
+4. Shared reusable UI widgets and design token integration.
+5. Feature screen assemblies with loading, error, empty, and retry states.
+6. Navigation routing and deeplink integration.
+7. Local database / secure storage cache and schema migrations.
+8. Localization keys and strings.
+9. Analytics event tracking and telemetry.
 
-Rules:
-- No hardcoded strings — localisation files or constants.
-- No hardcoded colors/spacing — design tokens only.
-- Every async path renders loading, empty, error, and retry states.
-- Every network call carries `TRACE_ID` and maps business codes to user-facing copy.
-- No secrets, tokens, or keys in source or bundle.
-- Dispose controllers/streams/listeners. No leaks.
+Core implementation rules:
+- No hardcoded strings — use localization files or centralized constants.
+- No hardcoded colors or spacing — use design system tokens and themes.
+- Every asynchronous operation must handle and render loading, empty, error, and retry states.
+- Every HTTP request must propagate correlation/trace ID headers.
+- Never store secrets or sensitive credentials in client bundles.
+- Properly dispose controllers, streams, listeners, and subscriptions to eliminate memory leaks.
 
-## Step 7 — Test to 100%
+## Step 7 — Test to 100% Coverage
 
-Run unit + widget + E2E suites. Report REAL numbers. Cover offline, expired token refresh, permission denied, empty list, slow network, back navigation, deeplink cold start.
+Run unit, widget/component, and E2E integration test suites. Report REAL pass/fail numbers and coverage metrics.
+Validate edge cases: network disconnection, token expiration & refresh, permission denial, empty data lists, slow network latency, system font scaling, and deeplink cold starts.
 
-## Step 8 — Release Prep
+## Step 8 — Release Prep & Documentation Sync
 
-Version bump, force-update matrix, screenshots for `Review.md`, changelog entry in `docs/release-notes/`.
+Bump version identifiers, update changelogs, capture UI screenshots for `Review.md`, and verify CI/CD build scripts pass.
 
 ## Step 9 — Caveman Summary
 
-Run `.agents/shared/caveman-summary.md`. Mandatory.
+Mandatory concise completion summary: State screens created, state stores added, package additions, and real test suite numbers.

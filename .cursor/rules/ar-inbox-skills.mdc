@@ -1,40 +1,50 @@
 ---
-description: AppRinger (AR-Inbox) workspace governance and skill routing. Always applies.
+description: AppRinger workspace governance and skill routing. Always applies.
 globs:
 alwaysApply: true
 ---
 
-# AppRinger (AR-Inbox) Skills — Routing Rule
+# AppRinger Skills — Routing & Governance Rule
 
 Workspace rules live in `.agents/AGENTS.md`. Skills live in `.agents/skills/<name>/SKILL.md`. Shared modules live in `.agents/shared/`.
 
-Before doing feature, change, bug, or review work, READ the matching skill file and follow it:
+Before doing feature, change, bug, analysis, or review work, READ the matching skill file and follow it:
 
 | Intent | Read this file |
 |---|---|
-| New backend feature / API / DB / Livewire UI | `.agents/skills/new-feature-be/SKILL.md` |
-| New mobile app feature / screen | `.agents/skills/new-feature-mobile/SKILL.md` |
-| Change to an already-documented feature | `.agents/skills/cr/SKILL.md` |
-| Bug, error, wrong behaviour, RCA | `.agents/skills/bug/SKILL.md` |
-| Code review of a diff / branch / file | `.agents/skills/review/SKILL.md` |
+| Analyze, fingerprint, & onboard codebase | `.agents/skills/analyze-project/SKILL.md` |
+| New backend feature / API / DB / Livewire / Service | `.agents/skills/new-feature-be/SKILL.md` |
+| New frontend feature / React / Next.js / Vue UI | `.agents/skills/new-feature-fe/SKILL.md` |
+| New mobile app feature / screen (Flutter / RN / iOS / Android) | `.agents/skills/new-feature-mobile/SKILL.md` |
+| Reverse engineer, audit, or create project documentation | `.agents/skills/project-documentation-auditor/SKILL.md` |
+| Change to an already-documented feature (CR) | `.agents/skills/cr/SKILL.md` |
+| Bug, error, wrong behaviour, Root Cause Analysis (RCA) | `.agents/skills/bug/SKILL.md` |
+| Code review of a diff / branch / PR / file set | `.agents/skills/review/SKILL.md` |
 
-Routing:
-- Modification to a documented feature is `cr`.
-- Wrong behaviour versus spec is `bug`.
-- Unsure — ask one routing question, do not guess.
+### Routing Protocol:
+- If analyzing/fingerprinting an unfamiliar project or onboarding -> `analyze-project`.
+- If building a new backend endpoint/service/worker -> `new-feature-be`.
+- If building a new web UI/component/page -> `new-feature-fe`.
+- If building a new mobile screen/app feature -> `new-feature-mobile`.
+- If creating, auditing, or updating technical docs -> `project-documentation-auditor`.
+- If modifying an existing documented feature -> `cr`.
+- If fixing a defect or reproducing an error -> `bug`.
+- If auditing code or reviewing PRs -> `review`.
+- Unsure — ask one clarifying routing question, do not guess.
 
-Shared modules every skill uses:
+### Shared Modules:
 - `.agents/shared/impact-analysis.md` — run before planning.
 - `.agents/shared/grill-me.md` — ask clarifying questions, then STOP for answers.
-- `.agents/shared/standards.md` — AppRinger engineering rules.
+- `.agents/shared/engineering-standards.md` — AppRinger engineering rules & KK's coding style.
 - `.agents/shared/caveman-summary.md` — mandatory final summary.
 
-Non-negotiable KK Standards:
+### Non-Negotiable Core Standards:
 1. Impact analysis first.
 2. Grill-me before documenting. Never assume business logic.
 3. Zero implementation code before explicit plan approval.
-4. Multi-tenant isolation on every table with `merchant_id`.
+4. Multi-tenant isolation on every table with `merchant_id` / tenant scope.
 5. SweetAlert2 (`swal()`) — never browser `alert()`.
-6. Premium modern UI by default (soft backgrounds, glassmorphism, hover-lifts). No inline styles.
-7. 100% test coverage with `php artisan test`.
-8. Caveman summary at the end.
+6. Premium modern UI by default (soft backgrounds, glassmorphism, hover-lifts). No inline styles (`style={{}}`).
+7. 100% test coverage with automated tests.
+8. Clean workspace — delete temporary scripts immediately.
+9. Caveman summary at the end.
