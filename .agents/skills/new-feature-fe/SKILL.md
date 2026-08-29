@@ -12,6 +12,19 @@ Docs root: `docs/features/<feature-name>/frontend/` (or `docs/features/<feature-
 
 ---
 
+## 🧭 Navigation Standard
+Every generated markdown file must start with a compact top navigation bar for 1-hop agent traversal:
+`> 🧭 [Master Index](../../INDEX.md) | **Feature**: <feature-name> | **Backend API**: [API.md](../API.md)`
+
+---
+
+## 🛡️ Anti-Patchwork Frontend Standard
+1. **Typed DTOs & Validation**: Never use unverified `any` payloads. Validate inputs with Zod/Yup and bind to explicit backend DTO contracts.
+2. **Explicit State Machines**: Handle loading, empty, error, and success states explicitly. Never mask missing data with silent fallbacks (`|| ''` or `?.`) when data absence indicates an upstream error.
+3. **No Inline Hacks**: Keep styles encapsulated in CSS classes/modules or Tailwind. Keep business transformations in custom hooks/services, not inside render trees.
+
+---
+
 ## Step 0 — Stack & Architecture Analysis (Automated Detection)
 
 Before writing any design or code, inspect `package.json`, configuration files, and directory structure to determine the exact frontend stack and apply its architectural patterns:
@@ -51,7 +64,7 @@ Run impact analysis across the frontend codebase:
 - Assess bundle size impact and code-splitting boundaries (dynamic imports / lazy loading).
 - Verify backend API contract compatibility (endpoints, DTOs, business status codes).
 
-Output: `docs/features/<feature-name>/frontend/Impact-Analysis.md`.
+Output: `docs/features/<feature-name>/frontend/Impact-Analysis.md` (with top navigation bar).
 
 ## Step 2 — Grill Me
 
@@ -80,7 +93,7 @@ STOP after asking to await user response. Record answers under `## Clarification
 
 ## Step 4 — Write All 19 Frontend Docs
 
-Zero implementation code until all 19 specification files exist under `docs/features/<feature-name>/frontend/` (or `docs/features/<feature-name>/`):
+Zero implementation code until all 19 specification files exist under `docs/features/<feature-name>/frontend/` (or `docs/features/<feature-name>/`), each featuring the top navigation bar:
 
 1. `Impact-Analysis.md` — Route and component blast radius, bundle size impact, dependency audit, rollback plan.
 2. `Feature-Spec.md` — User stories, UI acceptance criteria, interaction rules, `## Clarifications`.
@@ -145,14 +158,17 @@ Execute the implementation in strict dependency order:
 
 ---
 
-## Step 8 — Design QA & Documentation Sync
+## Step 8 — Design QA & Master Index Registration
 
 - Verify responsive layouts across mobile (375px), tablet (768px), and desktop (1280px+).
 - Ensure zero unhandled console warnings/errors.
+- **Register into `docs/INDEX.md`**:
+  - Add feature UI page routes to Route Index.
+  - Link frontend spec root under the Feature Registry.
 - Update `Walkthrough.md` with UI screenshots and verification evidence.
 
 ---
 
 ## Step 9 — Caveman Summary
 
-Mandatory concise completion summary: Specify framework mode (Next.js App/Pages vs React SPA), components created, routes added, and real test suite metrics.
+Mandatory concise completion summary: Specify framework mode (Next.js App/Pages vs React SPA), components created, routes added, `docs/INDEX.md` entries synced, and real test suite metrics.

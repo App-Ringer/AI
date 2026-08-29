@@ -12,6 +12,19 @@ Docs root: `docs/features/<feature-name>/`
 
 ---
 
+## 🧭 Navigation Standard
+Every generated markdown file must start with a compact top navigation bar for 1-hop agent traversal:
+`> 🧭 [Master Index](../../INDEX.md) | **Feature**: <feature-name> | **Domain**: <Domain> | **Tables**: [DB-Changes.md](./DB-Changes.md) | **API**: [API.md](./API.md)`
+
+---
+
+## 🛡️ Anti-Patchwork Architecture Standard
+1. **Enforce Invariants at the Root**: Design database schemas with proper constraints (foreign keys, check constraints, non-null guards, unique indexes) and use DTOs/Form Requests to make illegal states unrepresentable.
+2. **Encapsulate in Domain Actions/Services**: Never place business logic directly in controllers or route closures. Encapsulate core operations in dedicated Domain Action/Service classes.
+3. **Traceability**: Link every route, model, and queue job directly to its specification via `docs/INDEX.md`.
+
+---
+
 ## Step 0 — Stack & Architecture Discovery
 
 Before designing, inspect the workspace to identify the backend ecosystem:
@@ -29,7 +42,7 @@ Run impact analysis across the existing backend:
 - Check route conflicts, middleware chains, and authorization policies.
 - Assess queue worker load, cache invalidation blast radius, and external API dependencies.
 
-Output: `docs/features/<feature-name>/Impact-Analysis.md`.
+Output: `docs/features/<feature-name>/Impact-Analysis.md` (with top navigation bar).
 
 ## Step 2 — Grill Me
 
@@ -48,7 +61,7 @@ If the feature includes server-rendered admin views (e.g., Blade, EJS, Jinja, Th
 
 ## Step 4 — Write All 19 Backend Docs
 
-Zero implementation code until all 19 specification files exist under `docs/features/<feature-name>/`:
+Zero implementation code until all 19 specification files exist under `docs/features/<feature-name>/` (all featuring the top navigation bar):
 
 1. `Impact-Analysis.md` — Codebase scope, schema audit, risk register, rollback plan, estimate.
 2. `Feature-Spec.md` — Business goals, current vs future flows, acceptance criteria, configurable settings, `## Clarifications`.
@@ -101,10 +114,16 @@ Core implementation rules:
 Run the automated test suites (unit, integration, feature). Report REAL pass/fail numbers and coverage percentages.
 Verify edge cases: expired tokens, lock contention, soft-deleted rows, negative numbers, missing relationships, race conditions, cache invalidation.
 
-## Step 8 — Docs & API Collection Sync
+## Step 8 — Docs & Master Index Registration
 
-Update `API.md`, Postman/OpenAPI collection files, and `Walkthrough.md`. Ensure CI/CD workflows run all new tests.
+1. Update `API.md`, Postman/OpenAPI collection files, and `Walkthrough.md`.
+2. **Register into `docs/INDEX.md`**:
+   - Add feature row to Feature Registry.
+   - Add all new endpoints to the Route Index.
+   - Add all new DB tables to the Database Table Index.
+   - Add all new background jobs to the Async Jobs Index.
+3. Ensure CI/CD workflows run all new tests.
 
 ## Step 9 — Caveman Summary
 
-Mandatory concise completion summary: Specify endpoints created, migrations run, queue jobs added, and real test suite coverage numbers.
+Mandatory concise completion summary: Specify endpoints created, migrations run, queue jobs added, `docs/INDEX.md` entries registered, and real test suite coverage numbers.

@@ -5,9 +5,28 @@ description: Bug triage, trace, and Root Cause Analysis (RCA) workflow for any s
 
 # Bug Trace & Root Cause Analysis (RCA)
 
-Never patch a symptom. Find the root cause, prove it with a failing test, then fix.
+Never patch a symptom or pile patchwork on top of patchwork. Find the root cause, guard the invariant, prove it with a failing test, then fix.
 
 Docs root: `docs/bugs/BUG-<NNN>-<slug>/`
+
+---
+
+## 🛡️ Anti-Patchwork Standard (Fix Root, Not Symptom)
+
+1. **No Band-Aid Guards**: Never insert defensive symptom patches (e.g. `?? null`, empty fallbacks, swallowed `try-catch`, or inline `if` checks at crash points) without identifying where the invalid state originated.
+2. **Guard Invariants at Boundaries**: Enforce correctness at the highest structural level — Database constraints/foreign keys, DTO request validations, State Machine transitions, or dedicated Domain Actions.
+3. **Blast Radius & Sibling Audit**: When a flawed pattern is discovered, grep the entire codebase for identical anti-patterns and fix them comprehensively with tests.
+4. **3-Strike Refactoring Rule**: If a component or function has accumulated >2 previous bug patches or nested condition hacks, STOP patching. Propose a structural refactoring via `cr` (Change Request) to encapsulate the logic in a clean Service/Action.
+
+---
+
+## Step 0 — Fast-Path Index Lookup (<300 Tokens)
+
+Do **NOT** read dozens of documents or whole folders. Use the master index to establish the expected ground truth in seconds:
+
+1. Look up the reported Route, DB Table/Model, Job, or Error Keyword in `docs/INDEX.md`.
+2. Open **ONLY** the 1–2 target spec files referenced (e.g. `docs/features/<feature>/API.md` or `DB-Changes.md`).
+3. Note the intended contract/rule and proceed directly to evidence gathering (<300 tokens consumed).
 
 ---
 
@@ -48,6 +67,8 @@ Classify the root cause:
 Output `docs/bugs/BUG-<NNN>-<slug>/RCA.md`:
 
 ```markdown
+> 🧭 [Master Index](../../INDEX.md) | **Feature**: [<feature-name>](../../features/<feature-name>/Feature-Spec.md) | **Status**: Investigating
+
 # BUG-<NNN> — <title>
 - Severity: Critical | High | Medium | Low
 - Environment / First Seen / Trace ID:
@@ -71,6 +92,9 @@ Output `docs/bugs/BUG-<NNN>-<slug>/RCA.md`:
 4. Why ... → ...
 5. Why ... → ...
 
+## Invariant Violated
+<which core business rule, DB constraint, or schema contract was broken>
+
 ## Contributing Factors
 ## Why Tests Missed It
 ## Blast Radius
@@ -92,7 +116,7 @@ Analyze the side effects of fixing the issue:
 - State & In-Flight: Are queued jobs, active sessions, or cached keys poisoned? Do they require purging/invalidation?
 - Consumers: Will the fix alter response schemas for existing mobile or API consumers?
 
-Output: `docs/bugs/BUG-<NNN>-<slug>/Impact-Analysis.md`.
+Output: `docs/bugs/BUG-<NNN>-<slug>/Impact-Analysis.md` (with top navigation bar).
 
 ## Step 6 — Approval Gate
 
@@ -109,7 +133,7 @@ Add test coverage for all sibling call sites identified in Blast Radius.
 
 - Apply the fix following project architecture and code standards (clean imports, no hardcoded magic values, proper error handling).
 - Run the full test suite. Report REAL pass/fail numbers.
-- If the specification was incorrect, update the feature docs under `docs/features/<feature-name>/` and note the correction in `RCA.md`.
+- If the specification was incorrect, update the feature docs under `docs/features/<feature-name>/` and sync `docs/INDEX.md`.
 - Execute data repair scripts if necessary; log rows/records touched.
 - Write `Postmortem.md` for Critical/High severity bugs: timeline, detection gap, monitoring/alerts added.
 
